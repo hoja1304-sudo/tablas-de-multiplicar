@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tablas de Multiplicar</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #f0f2f5; --surface: #ffffff; --text: #1a1a2e; --text2: #555570;
+      --accent: #6c63ff; --btn-bg: #e8eaed; --btn-hover: #d0d3da;
+      --btn-text: #1a1a2e; --shadow: rgba(0,0,0,.12);
+    }
+    body.dark {
+      --bg: #2a2b30; --surface: #35363d; --text: #e8e8f0; --text2: #aaaacc;
+      --accent: #8b84ff; --btn-bg: #3f4047; --btn-hover: #4a4b55;
+      --btn-text: #e8e8f0; --shadow: rgba(0,0,0,.35);
+    }
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg); color: var(--text);
+      min-height: 100dvh; overflow: hidden;
+      transition: background .3s, color .3s;
+    }
+    .screen { display: none; width: 100%; height: 100dvh; }
+    .screen.active { display: flex; }
+
+    #themeBtn {
+      position: fixed; top: 14px; right: 16px; z-index: 100;
+      background: var(--btn-bg); color: var(--btn-text);
+      border: none; border-radius: 50px; padding: 7px 14px;
+      font-size: .8rem; cursor: pointer;
+      box-shadow: 0 2px 8px var(--shadow);
+      transition: background .25s, transform .15s;
+    }
+    #themeBtn:hover { background: var(--btn-hover); transform: scale(1.05); }
+
+    /* ── MENU ── */
+    #menuScreen {
+      flex-direction: column; align-items: center; justify-content: center;
+      gap: clamp(16px, 3vw, 32px); padding: clamp(16px, 4vw, 48px);
+    }
+    .menu-title {
+      font-size: clamp(1.4rem, 4vw, 2.4rem); font-weight: 700;
+      color: var(--accent); text-align: center;
+      text-shadow: 0 2px 12px rgba(108,99,255,.2);
+    }
+    .menu-subtitle { font-size: clamp(.75rem, 2vw, 1rem); color: var(--text2); text-align: center; }
+    .tables-grid {
+      display: grid; grid-template-columns: repeat(5, 1fr);
+      gap: clamp(8px, 1.5vw, 16px); width: min(560px, 95vw);
+    }
+    .table-btn {
+      background: var(--btn-bg); color: var(--btn-text);
+      border: 2px solid transparent; border-radius: 12px;
+      padding: clamp(10px, 2vw, 16px) 0;
+      font-size: clamp(.7rem, 1.8vw, .95rem); font-weight: 600;
+      cursor: pointer; box-shadow: 0 2px 8px var(--shadow);
+      transition: background .2s, border-color .2s, transform .15s, box-shadow .2s;
+    }
+    .table-btn:hover {
+      background: var(--accent); color: #fff; border-color: var(--accent);
+      transform: translateY(-3px); box-shadow: 0 6px 18px rgba(108,99,255,.3);
+    }
+
+    /* ── GAME ── */
+    #gameScreen { flex-direction: column; position: relative; background: #1a2520; }
+    .game-header {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 8px;
+      padding: clamp(6px,1.5vw,12px) clamp(12px,3vw,24px);
+      padding-right: max(clamp(12px,3vw,24px), 112px); /* evita solapamiento con #themeBtn fijo */
+      background: var(--surface); box-shadow: 0 2px 12px var(--shadow);
+      flex-shrink: 0; flex-wrap: wrap;
+    }
+    .header-btns { display: flex; gap: 8px; flex-wrap: wrap; }
+    .hbtn {
+      background: var(--btn-bg); color: var(--btn-text);
+      border: none; border-radius: 8px; padding: 7px 14px;
+      font-size: clamp(.65rem, 1.8vw, .82rem); font-weight: 600;
+      cursor: pointer; box-shadow: 0 1px 5px var(--shadow);
+      transition: background .2s, transform .12s;
+    }
+    .hbtn:hover { background: var(--btn-hover); transform: scale(1.05); }
+    .hbtn.danger { background: #ff6b6b22; color: #c0392b; }
+    .hbtn.danger:hover { background: #ff6b6b44; }
+    .question-box { text-align: center; flex-shrink: 0; }
+    .question-label { font-size: clamp(.65rem,1.6vw,.85rem); color: var(--text2); font-weight: 500; }
+    .question-text {
+      font-size: clamp(1.4rem, 4.5vw, 2.8rem); font-weight: 800; color: var(--accent); line-height: 1.1;
+    }
+    .stats-row { display: flex; justify-content: center; gap: clamp(12px,2.5vw,32px); }
+    .stat { font-size: clamp(.65rem,1.6vw,.85rem); font-weight: 600; color: var(--text2); }
+    .stat span { color: var(--accent); }
+    #gameCanvas { flex: 1; display: block; width: 100%; cursor: pointer; touch-action: none; }
+
+    .overlay {
+      display: none; position: absolute; inset: 0;
+      background: rgba(0,0,0,.55);
+      flex-direction: column; align-items: center; justify-content: center; z-index: 50;
+    }
+    .overlay.show { display: flex; }
+    .overlay-card {
+      background: var(--surface); border-radius: 20px;
+      padding: clamp(24px,5vw,48px) clamp(32px,6vw,64px);
+      text-align: center; box-shadow: 0 8px 40px rgba(0,0,0,.3);
+      display: flex; flex-direction: column; align-items: center; gap: 16px;
+    }
+    .overlay-title { font-size: clamp(1.4rem,4vw,2.2rem); font-weight: 800; color: var(--accent); }
+    .overlay-msg { font-size: clamp(.9rem,2.2vw,1.1rem); color: var(--text2); }
+    .overlay-btns { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
+    .obtn {
+      background: var(--accent); color: #fff; border: none; border-radius: 10px;
+      padding: 10px 22px; font-size: .9rem; font-weight: 700;
+      cursor: pointer; box-shadow: 0 4px 14px rgba(108,99,255,.35);
+      transition: transform .15s, box-shadow .15s;
+    }
+    .obtn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(108,99,255,.45); }
+    .obtn.secondary { background: var(--btn-bg); color: var(--btn-text); box-shadow: none; }
+    .obtn.secondary:hover { box-shadow: 0 2px 10px var(--shadow); }
+  </style>
+</head>
+<body>
+
+<button id="themeBtn" onclick="toggleTheme()">🌙 Oscuro</button>
+
+<section id="menuScreen" class="screen active">
+  <h1 class="menu-title">Tablas de multiplicar</h1>
+  <p class="menu-subtitle">Selecciona una tabla para comenzar</p>
+  <div class="tables-grid" id="tablesGrid"></div>
+</section>
+
+<section id="gameScreen" class="screen">
+  <div class="game-header">
+    <div class="header-btns">
+      <button class="hbtn danger" onclick="exitGame()">✕ Salir</button>
+      <button class="hbtn" onclick="goMenu()">☰ Menú</button>
+      <button class="hbtn" onclick="restartGame()">↺ Reiniciar</button>
+    </div>
+    <div class="question-box">
+      <div class="question-label">Revienta la burbuja de:</div>
+      <div class="question-text" id="questionText">4 × 3</div>
+    </div>
+    <div class="stats-row">
+      <div class="stat">Aciertos: <span id="scoreVal">0</span></div>
+      <div class="stat">Errores: <span id="errorsVal">0</span>/5</div>
+    </div>
+  </div>
+  <canvas id="gameCanvas"></canvas>
+  <div class="overlay" id="overlay">
+    <div class="overlay-card">
+      <div class="overlay-title" id="overlayTitle">¡Excelente!</div>
+      <div class="overlay-msg" id="overlayMsg">Completaste la tabla</div>
+      <div class="overlay-btns">
+        <button class="obtn" onclick="restartGame()">↺ Reiniciar</button>
+        <button class="obtn secondary" onclick="goMenu()">☰ Elegir tabla</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script>
+// ── Theme ─────────────────────────────────────────────────────────────
+let darkMode = false;
+function toggleTheme() {
+  darkMode = !darkMode;
+  document.body.classList.toggle('dark', darkMode);
+  document.getElementById('themeBtn').textContent = darkMode ? '☀️ Claro' : '🌙 Oscuro';
+}
+
+// ── Menu grid ──────────────────────────────────────────────────────────
+const menuGrid = document.getElementById('tablesGrid');
+for (let t = 1; t <= 10; t++) {
+  const btn = document.createElement('button');
+  btn.className = 'table-btn';
+  btn.textContent = `Tabla ${t}`;
+  btn.onclick = () => startGame(t);
+  menuGrid.appendChild(btn);
+}
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+// ── Audio ──────────────────────────────────────────────────────────────
+const popAudio = new Audio('bubble-pop.mp3');
+function playPop() { popAudio.currentTime = 0; popAudio.play().catch(() => {}); }
+
+// ── State ──────────────────────────────────────────────────────────────
+let currentTable = 1, bubbles = [], pairs = [], pending = [], currentPair = null;
+let score = 0, errors = 0;
+const MAX_ERRORS = 5;
+
+// ── Canvas ─────────────────────────────────────────────────────────────
+const canvas  = document.getElementById('gameCanvas');
+const ctx     = canvas.getContext('2d');
+
+function wallT() {
+  return Math.max(30, Math.min(56, Math.min(canvas.width, canvas.height) * 0.088));
+}
+function bubbleR() {
+  const T = wallT();
+  const inner = Math.min(canvas.width - 2*T, canvas.height - 2*T);
+  return Math.max(38, Math.min(76, inner * 0.1));
+}
+
+// ── Pairs ──────────────────────────────────────────────────────────────
+function buildPairs(t) {
+  return Array.from({length:10}, (_, i) => ({ q:`${t} × ${i+1}`, a:t*(i+1) }));
+}
+
+// ── Spawn ──────────────────────────────────────────────────────────────
+function spawnBubbles() {
+  const r = bubbleR(), T = wallT();
+  const W = canvas.width, H = canvas.height;
+  const x1 = T + r, x2 = Math.max(x1 + 1, W - T - r);
+  const y1 = T + r, y2 = Math.max(y1 + 1, H - T - r);
+  const placed = [];
+  bubbles = pairs.map(p => {
+    let x, y, tries = 0;
+    do {
+      x = x1 + Math.random() * (x2 - x1);
+      y = y1 + Math.random() * (y2 - y1);
+      tries++;
+    } while (tries < 60 && placed.some(b => Math.hypot(b.x-x, b.y-y) < r * 2.4));
+    const speed = 0.75 + Math.random() * 0.95;
+    const angle = Math.random() * Math.PI * 2;
+    const obj = { x, y, dx: Math.cos(angle)*speed, dy: Math.sin(angle)*speed,
+                  ans: p.a, alive: true, popAnim: 0, wrongFlash: 0 };
+    placed.push(obj);
+    return obj;
+  });
+}
+
+// ── Questions ──────────────────────────────────────────────────────────
+function nextQuestion() {
+  if (!pending.length) { endGame(true); return; }
+  currentPair = pending[Math.floor(Math.random() * pending.length)];
+  document.getElementById('questionText').textContent = currentPair.q;
+}
+function updateStats() {
+  document.getElementById('scoreVal').textContent  = score;
+  document.getElementById('errorsVal').textContent = errors;
+}
+
+// ── Game control ───────────────────────────────────────────────────────
+function startGame(t) {
+  currentTable = t;
+  showScreen('gameScreen');
+  document.getElementById('overlay').classList.remove('show');
+  // Dos frames: primero el DOM pinta el header, segundo ya tiene offsetHeight correcto.
+  requestAnimationFrame(() => requestAnimationFrame(() => { resizeCanvas(); restartGame(); }));
+}
+function restartGame() {
+  pairs   = buildPairs(currentTable);
+  pending = [...pairs];
+  score = errors = 0;
+  updateStats();
+  spawnBubbles();
+  nextQuestion();
+  document.getElementById('overlay').classList.remove('show');
+  if (!animRunning) startLoop();
+}
+function goMenu()   { stopLoop(); showScreen('menuScreen'); }
+function exitGame() {
+  stopLoop(); window.close();
+  setTimeout(() => showScreen('menuScreen'), 150);
+}
+function endGame(win) {
+  stopLoop();
+  document.getElementById('overlayTitle').textContent = win ? '¡Excelente! 🎉' : '¡Fin del juego!';
+  document.getElementById('overlayMsg').textContent   = win
+    ? `¡Completaste la Tabla del ${currentTable}! Puntaje: ${score}/10`
+    : `Demasiados errores. Puntaje: ${score}/10`;
+  document.getElementById('overlay').classList.add('show');
+}
+
+// ── Resize canvas ──────────────────────────────────────────────────────
+function resizeCanvas() {
+  if (!document.getElementById('gameScreen').classList.contains('active')) return;
+  const header = document.querySelector('.game-header');
+  const hh = header ? header.getBoundingClientRect().height : 0;
+  // Usar window.innerWidth/Height en lugar de getBoundingClientRect del canvas,
+  // porque flex:1 puede no estar computado aún en el primer frame.
+  canvas.width  = window.innerWidth;
+  canvas.height = Math.max(100, window.innerHeight - hh);
+  const r = bubbleR(), T = wallT();
+  bubbles.forEach(b => {
+    if (!b.alive) return;
+    b.x = Math.max(T+r, Math.min(canvas.width -T-r, b.x));
+    b.y = Math.max(T+r, Math.min(canvas.height-T-r, b.y));
+  });
+}
+window.addEventListener('resize', resizeCanvas);
+
+// ── Draw soap bubble ───────────────────────────────────────────────────
+function drawBubble(b) {
+  const r = bubbleR();
+  ctx.save();
+  ctx.translate(b.x, b.y);
+
+  if (b.popAnim > 0) {
+    // Three expanding rings fade out
+    for (let i = 0; i < 3; i++) {
+      const p = Math.min(b.popAnim + i * 0.14, 1);
+      ctx.globalAlpha = (1 - p) * 0.7;
+      ctx.beginPath();
+      ctx.arc(0, 0, r * (0.85 + p * 1.4), 0, Math.PI * 2);
+      ctx.strokeStyle = `hsl(${200 + i*30}, 85%, 68%)`;
+      ctx.lineWidth = Math.max(0.5, 3.5 - p * 3.5);
+      ctx.stroke();
+    }
+    ctx.restore();
+    return;
+  }
+
+  // Soap body — radial gradient for glass effect
+  const gr = ctx.createRadialGradient(-r*0.28, -r*0.28, r*0.04, 0, 0, r);
+  gr.addColorStop(0,    'rgba(255,255,255,0.82)');
+  gr.addColorStop(0.28, 'rgba(200,235,255,0.38)');
+  gr.addColorStop(0.65, 'rgba(90,165,255,0.42)');
+  gr.addColorStop(1,    'rgba(55,105,240,0.68)');
+  ctx.beginPath();
+  ctx.arc(0, 0, r, 0, Math.PI * 2);
+  ctx.fillStyle = gr;
+  ctx.fill();
+
+  // Wrong flash overlay
+  if (b.wrongFlash > 0) {
+    ctx.beginPath();
+    ctx.arc(0, 0, r, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(255,50,50,${b.wrongFlash * 0.42})`;
+    ctx.fill();
+  }
+
+  // Rim
+  ctx.beginPath();
+  ctx.arc(0, 0, r - 1, 0, Math.PI * 2);
+  ctx.strokeStyle = 'rgba(70,150,255,0.88)';
+  ctx.lineWidth = 2.5;
+  ctx.stroke();
+
+  // Shine arc (upper-left)
+  ctx.beginPath();
+  ctx.arc(-r*0.22, -r*0.26, r*0.40, Math.PI * 1.05, Math.PI * 1.88);
+  ctx.strokeStyle = 'rgba(255,255,255,0.95)';
+  ctx.lineWidth = 4;
+  ctx.lineCap = 'round';
+  ctx.stroke();
+
+  // Bright dot
+  ctx.beginPath();
+  ctx.arc(-r*0.33, -r*0.38, r*0.11, 0, Math.PI * 2);
+  ctx.fillStyle = '#ffffff';
+  ctx.fill();
+
+  // Number — large, adaptive size
+  const label  = String(b.ans);
+  const digits = label.length;
+  const scale  = digits === 1 ? 1.10 : digits === 2 ? 0.87 : 0.67;
+  const fs     = Math.max(16, Math.floor(r * scale));
+  ctx.font = `900 ${fs}px 'Segoe UI', Arial, sans-serif`;
+  ctx.textAlign    = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.shadowColor  = 'rgba(255,255,255,0.98)';
+  ctx.shadowBlur   = 10;
+  ctx.fillStyle    = '#a82010';
+  ctx.fillText(label, 0, 0);
+  ctx.shadowBlur = 0;
+
+  ctx.restore();
+}
+
+// ── Brick wall ─────────────────────────────────────────────────────────
+function drawBrick(x, y, w, h, ci) {
+  if (w <= 0 || h <= 0) return;
+  const palette = darkMode
+    ? ['#7a3520','#8a4028','#6b2e16','#953828']
+    : ['#c86040','#d97050','#b85238','#e07855'];
+  ctx.fillStyle = palette[Math.abs(ci) % palette.length];
+  ctx.fillRect(x, y, w, h);
+  ctx.fillStyle = 'rgba(255,255,255,0.14)';
+  ctx.fillRect(x, y, w, 2);
+  ctx.fillRect(x, y, 2, h);
+  ctx.fillStyle = 'rgba(0,0,0,0.22)';
+  ctx.fillRect(x, y + h - 2, w, 2);
+  ctx.fillRect(x + w - 2, y, 2, h);
+}
+
+function drawBrickWall() {
+  const W = canvas.width, H = canvas.height;
+  const T = wallT();
+  const g = 2;           // mortar gap (px)
+  const ROWS = 2;        // filas de ladrillo en franjas superior e inferior
+  const BH  = (T - g * (ROWS + 1)) / ROWS;  // alto de ladrillo horizontal
+  const BW  = T * 2.2;   // ancho de ladrillo horizontal
+  const BHv = T * 1.5;   // alto de ladrillo vertical (paredes laterales)
+  const BWv = T - g * 2; // ancho de ladrillo vertical
+
+  // ── Mortero (fondo de las 4 franjas) ─────────────────────────────────
+  const mortar = darkMode ? '#3a2818' : '#8c6840';
+  ctx.fillStyle = mortar;
+  ctx.fillRect(0, 0, W, T);           // superior
+  ctx.fillRect(0, H - T, W, T);       // inferior
+  ctx.fillRect(0, T, T, H - 2 * T);   // izquierda
+  ctx.fillRect(W - T, T, T, H - 2*T); // derecha
+
+  const numC = Math.ceil((W + BW) / BW) + 2;
+
+  // ── Franja SUPERIOR (ROWS filas) ──────────────────────────────────────
+  for (let row = 0; row < ROWS; row++) {
+    const off = (row % 2) * (BW * 0.5);
+    const by  = g + row * (BH + g);
+    for (let c = -1; c < numC; c++) {
+      const bx = c * BW + off + g;
+      const x1 = Math.max(bx, g);
+      const x2 = Math.min(bx + BW - g, W - g);
+      if (x2 > x1) drawBrick(x1, by, x2 - x1, BH, c + row * 11);
+    }
+  }
+
+  // ── Franja INFERIOR (ROWS filas) ──────────────────────────────────────
+  for (let row = 0; row < ROWS; row++) {
+    const off = ((row + 1) % 2) * (BW * 0.5); // desfase contrario a la superior
+    const by  = H - T + g + row * (BH + g);
+    for (let c = -1; c < numC; c++) {
+      const bx = c * BW + off + g;
+      const x1 = Math.max(bx, g);
+      const x2 = Math.min(bx + BW - g, W - g);
+      const y2 = Math.min(by + BH, H - g);
+      if (x2 > x1 && y2 > by) drawBrick(x1, by, x2 - x1, y2 - by, c + row * 7 + 5);
+    }
+  }
+
+  // ── Franja IZQUIERDA ─────────────────────────────────────────────────
+  const numR = Math.ceil((H - 2*T + BHv) / BHv) + 2;
+  for (let r = 0; r < numR; r++) {
+    const off = (r % 2) * (BHv * 0.5);
+    const by  = T + r * BHv - off;
+    const y1  = Math.max(by + g, T + g);
+    const y2  = Math.min(by + BHv - g, H - T - g);
+    if (y2 > y1) drawBrick(g, y1, BWv, y2 - y1, r + 3);
+  }
+
+  // ── Franja DERECHA ────────────────────────────────────────────────────
+  for (let r = 0; r < numR; r++) {
+    const off = ((r + 1) % 2) * (BHv * 0.5);
+    const by  = T + r * BHv - off;
+    const y1  = Math.max(by + g, T + g);
+    const y2  = Math.min(by + BHv - g, H - T - g);
+    if (y2 > y1) drawBrick(W - T + g, y1, BWv, y2 - y1, r + 9);
+  }
+
+  // ── Sombras interiores para profundidad ───────────────────────────────
+  const sw = 18;
+  let sg;
+  sg = ctx.createLinearGradient(T, 0, T+sw, 0);
+  sg.addColorStop(0, 'rgba(0,0,0,0.25)'); sg.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = sg; ctx.fillRect(T, T, sw, H-2*T);
+
+  sg = ctx.createLinearGradient(W-T-sw, 0, W-T, 0);
+  sg.addColorStop(0, 'rgba(0,0,0,0)'); sg.addColorStop(1, 'rgba(0,0,0,0.25)');
+  ctx.fillStyle = sg; ctx.fillRect(W-T-sw, T, sw, H-2*T);
+
+  sg = ctx.createLinearGradient(0, T, 0, T+sw);
+  sg.addColorStop(0, 'rgba(0,0,0,0.25)'); sg.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = sg; ctx.fillRect(T, T, W-2*T, sw);
+
+  sg = ctx.createLinearGradient(0, H-T-sw, 0, H-T);
+  sg.addColorStop(0, 'rgba(0,0,0,0)'); sg.addColorStop(1, 'rgba(0,0,0,0.25)');
+  ctx.fillStyle = sg; ctx.fillRect(T, H-T-sw, W-2*T, sw);
+}
+
+// ── Game loop ──────────────────────────────────────────────────────────
+let animRunning = false, rafId = null;
+
+function gameLoop() {
+  if (!animRunning) return;
+  const W = canvas.width, H = canvas.height;
+  const T = wallT(), r = bubbleR();
+
+  ctx.clearRect(0, 0, W, H);
+
+  // Arena background
+  const bg = ctx.createLinearGradient(T, T, W-T, H-T);
+  if (darkMode) { bg.addColorStop(0,'#243040'); bg.addColorStop(1,'#1e2c28'); }
+  else          { bg.addColorStop(0,'#dff6fb'); bg.addColorStop(1,'#e6f5ea'); }
+  ctx.fillStyle = bg;
+  ctx.fillRect(T, T, W-2*T, H-2*T);
+
+  // Move & draw bubbles
+  bubbles.forEach(b => {
+    if (!b.alive) {
+      if (b.popAnim > 0 && b.popAnim < 1) { b.popAnim += 0.065; drawBubble(b); }
+      return;
+    }
+    if (b.wrongFlash > 0) b.wrongFlash = Math.max(0, b.wrongFlash - 0.055);
+    b.x += b.dx; b.y += b.dy;
+    if (b.x - r < T)     { b.x = T + r;     b.dx =  Math.abs(b.dx); }
+    if (b.x + r > W - T) { b.x = W - T - r; b.dx = -Math.abs(b.dx); }
+    if (b.y - r < T)     { b.y = T + r;     b.dy =  Math.abs(b.dy); }
+    if (b.y + r > H - T) { b.y = H - T - r; b.dy = -Math.abs(b.dy); }
+    drawBubble(b);
+  });
+
+  // Brick wall rendered ON TOP so bubbles stay inside
+  drawBrickWall();
+
+  rafId = requestAnimationFrame(gameLoop);
+}
+
+function startLoop() { animRunning = true; rafId = requestAnimationFrame(gameLoop); }
+function stopLoop()  { animRunning = false; if (rafId) cancelAnimationFrame(rafId); }
+
+// ── Input — coordinates scaled to canvas internal space ───────────────
+function canvasXY(clientX, clientY) {
+  const rect = canvas.getBoundingClientRect();
+  return {
+    x: (clientX - rect.left) * (canvas.width  / rect.width),
+    y: (clientY - rect.top)  * (canvas.height / rect.height)
+  };
+}
+
+function handleTap(cx, cy) {
+  if (!currentPair || !animRunning) return;
+  const r = bubbleR() * 1.18;      // slightly generous hit zone
+  for (const b of bubbles) {
+    if (!b.alive) continue;
+    if (Math.hypot(b.x - cx, b.y - cy) <= r) {
+      if (b.ans === currentPair.a) {
+        b.alive = false; b.popAnim = 0.01;
+        score++;
+        pending = pending.filter(p => p.a !== currentPair.a);
+        updateStats(); playPop(); nextQuestion();
+      } else {
+        errors++; b.wrongFlash = 1;
+        updateStats();
+        if (errors >= MAX_ERRORS) endGame(false);
+      }
+      return;
+    }
+  }
+}
+
+canvas.addEventListener('click', e => {
+  const {x, y} = canvasXY(e.clientX, e.clientY);
+  handleTap(x, y);
+});
+canvas.addEventListener('touchstart', e => {
+  e.preventDefault();
+  const t = e.changedTouches[0];
+  const {x, y} = canvasXY(t.clientX, t.clientY);
+  handleTap(x, y);
+}, { passive: false });
+</script>
+</body>
+</html>
