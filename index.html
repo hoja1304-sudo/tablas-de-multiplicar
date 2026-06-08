@@ -12,9 +12,15 @@
       --btn-text: #1a1a2e; --shadow: rgba(0,0,0,.12);
     }
     body.dark {
-      --bg: #2a2b30; --surface: #35363d; --text: #e8e8f0; --text2: #aaaacc;
-      --accent: #8b84ff; --btn-bg: #3f4047; --btn-hover: #4a4b55;
-      --btn-text: #e8e8f0; --shadow: rgba(0,0,0,.35);
+      --bg:        #4a4d54;   /* gris medio, suave a la vista          */
+      --surface:   #5a5d66;   /* header/cards: claramente sobre el bg  */
+      --text:      #f2f2f8;   /* texto principal: blanco cálido        */
+      --text2:     #d8d8ee;   /* etiquetas y stats: gris claro legible */
+      --accent:    #a09aff;   /* púrpura más brillante en oscuro       */
+      --btn-bg:    #72757f;   /* botones: gris más claro que surface   */
+      --btn-hover: #84878f;   /* hover: un paso más claro              */
+      --btn-text:  #f2f2f8;   /* texto de botón: blanco                */
+      --shadow:    rgba(0,0,0,.30);
     }
     body {
       font-family: 'Segoe UI', system-ui, sans-serif;
@@ -82,16 +88,24 @@
       transition: background .2s, transform .12s;
     }
     .hbtn:hover { background: var(--btn-hover); transform: scale(1.05); }
-    .hbtn.danger { background: #ff6b6b22; color: #c0392b; }
-    .hbtn.danger:hover { background: #ff6b6b44; }
+    .hbtn.danger { background: #ff6b6b28; color: #c0392b; }
+    .hbtn.danger:hover { background: #ff6b6b50; }
+    body.dark .hbtn.danger { color: #ff7070; background: #ff606030; }
+    body.dark .hbtn.danger:hover { background: #ff606055; }
     .question-box { text-align: center; flex-shrink: 0; }
     .question-label { font-size: clamp(.65rem,1.6vw,.85rem); color: var(--text2); font-weight: 500; }
     .question-text {
       font-size: clamp(1.4rem, 4.5vw, 2.8rem); font-weight: 800; color: var(--accent); line-height: 1.1;
     }
     .stats-row { display: flex; justify-content: center; gap: clamp(12px,2.5vw,32px); }
-    .stat { font-size: clamp(.65rem,1.6vw,.85rem); font-weight: 600; color: var(--text2); }
-    .stat span { color: var(--accent); }
+    .stat {
+      font-size: clamp(.75rem,1.8vw,.95rem); font-weight: 700;
+      color: var(--text2);
+      background: var(--btn-bg);
+      border-radius: 8px;
+      padding: 4px 10px;
+    }
+    .stat span { color: var(--accent); font-size: 1.1em; }
     #gameCanvas { flex: 1; display: block; width: 100%; cursor: pointer; touch-action: none; }
 
     .overlay {
