@@ -49,8 +49,9 @@
 
     /* ── MENU ── */
     #menuScreen {
-      flex-direction: column; align-items: center; justify-content: center;
-      gap: clamp(18px, 3vw, 36px); padding: clamp(16px, 4vw, 52px);
+      flex-direction: column; align-items: center; justify-content: safe center;
+      gap: clamp(12px, 2.2vw, 26px); padding: clamp(64px, 8vw, 72px) clamp(16px, 4vw, 52px) clamp(16px, 4vw, 40px);
+      overflow-y: auto;   /* en pantallas bajas el menú se puede desplazar */
     }
     .menu-title {
       font-size: clamp(1.6rem, 4.5vw, 2.8rem); font-weight: 800;
@@ -83,6 +84,13 @@
       box-shadow: 0 10px 28px rgba(108,99,255,.38);
     }
     .table-btn:active { transform: translateY(-2px); }
+    .grupo-tit { margin: 10px 0 0; font-size: clamp(1rem, 2.6vw, 1.3rem); font-weight: 800; color: var(--text2); text-align: center; }
+    .grupo-tit.talento { color: #d97706; margin-top: 18px; }
+    .grupo-tit span { font-weight: 600; font-size: .85em; }
+    .grupo-nota { margin: -4px 0 0; font-size: clamp(.8rem, 2vw, .95rem); color: var(--text2); text-align: center; }
+    .tables-grid.talento .table-btn { border: 2px solid #f59e0b; }
+    .autoria { margin: 16px 0 0; font-size: clamp(.78rem, 1.7vw, .92rem); color: var(--text2); text-align: center; line-height: 1.45; opacity: .9; }
+    .autoria strong { font-weight: 600; }
 
     /* ── GAME ── */
     #gameScreen { flex-direction: column; position: relative; background: #1a2520; }
@@ -200,7 +208,12 @@
 <section id="menuScreen" class="screen active">
   <h1 class="menu-title">Tablas de multiplicar</h1>
   <p class="menu-subtitle">Selecciona una tabla para comenzar</p>
+  <h2 class="grupo-tit">📘 Segundo grado · Tablas del 1 al 5</h2>
   <div class="tables-grid" id="tablesGrid"></div>
+  <h2 class="grupo-tit talento">⭐ Talento matemático · Tablas del 6 al 10 <span>(opcional)</span></h2>
+  <p class="grupo-nota">Para estudiantes con alta dotación, a criterio del docente.</p>
+  <div class="tables-grid talento" id="tablesGridTalento"></div>
+  <p class="autoria"><strong>Elaborado por: Alberto Jiménez Ruiz</strong><br>Asesor Regional de Matemática DRE-Cartag-DAP-2026</p>
 </section>
 
 <section id="gameScreen" class="screen">
@@ -247,8 +260,9 @@ function toggleTheme() {
 }
 
 // ── Menu grid ──────────────────────────────────────────────────────────
-const menuGrid = document.getElementById('tablesGrid');
+// Tablas del 1 al 5 (segundo grado) y del 6 al 10 como opcionales para talento matemático
 for (let t = 1; t <= 10; t++) {
+  const menuGrid = document.getElementById(t <= 5 ? 'tablesGrid' : 'tablesGridTalento');
   const btn = document.createElement('button');
   btn.className = 'table-btn';
   btn.textContent = `Tabla ${t}`;
