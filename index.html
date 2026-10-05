@@ -84,6 +84,7 @@
       box-shadow: 0 10px 28px rgba(108,99,255,.38);
     }
     .table-btn:active { transform: translateY(-2px); }
+    .ae-linea { margin: 8px auto 2px; max-width: 640px; font-size: clamp(.85rem, 2vw, 1rem); color: var(--text2); text-align: center; line-height: 1.4; }
     .grupo-tit { margin: 10px 0 0; font-size: clamp(1rem, 2.6vw, 1.3rem); font-weight: 800; color: var(--text2); text-align: center; }
     .grupo-tit.talento { color: #d97706; margin-top: 18px; }
     .grupo-tit span { font-weight: 600; font-size: .85em; }
@@ -208,11 +209,9 @@
 <section id="menuScreen" class="screen active">
   <h1 class="menu-title">Tablas de multiplicar</h1>
   <p class="menu-subtitle">Selecciona una tabla para comenzar</p>
-  <h2 class="grupo-tit">📘 Segundo grado · Tablas del 1 al 5</h2>
+  <p class="ae-linea"><strong>Aprendizaje esperado:</strong> Determinar el resultado de las tablas del 1 al 10 aplicando diversas estrategias.</p>
+  <h2 class="grupo-tit">📘 Tercer grado · Tablas del 1 al 10</h2>
   <div class="tables-grid" id="tablesGrid"></div>
-  <h2 class="grupo-tit talento">⭐ Talento matemático · Tablas del 6 al 10 <span>(opcional)</span></h2>
-  <p class="grupo-nota">Para estudiantes con alta dotación, a criterio del docente.</p>
-  <div class="tables-grid talento" id="tablesGridTalento"></div>
   <p class="autoria"><strong>Elaborado por: Alberto Jiménez Ruiz</strong><br>Asesor Regional de Matemática DRE-Cartago-DAP-2026</p>
 </section>
 
@@ -260,9 +259,9 @@ function toggleTheme() {
 }
 
 // ── Menu grid ──────────────────────────────────────────────────────────
-// Tablas del 1 al 5 (segundo grado) y del 6 al 10 como opcionales para talento matemático
+// Tablas del 1 al 10 (tercer grado)
 for (let t = 1; t <= 10; t++) {
-  const menuGrid = document.getElementById(t <= 5 ? 'tablesGrid' : 'tablesGridTalento');
+  const menuGrid = document.getElementById('tablesGrid');
   const btn = document.createElement('button');
   btn.className = 'table-btn';
   btn.textContent = `Tabla ${t}`;
